@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Player</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+      .video-container {
+        position: relative;
+        height: 90vh;
+        width: 100%;
+        background-color: #000000;
+      }
+      .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #viewerCount {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      #message {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+      }
+      #interactionButton {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 5px;
+        min-width: 200px;
+      }
+      #interactionButton:disabled {
+        background-color: #45a049;
+        cursor: default;
+      }
+      #viewerStats {
+        display: none;
+        margin-top: 10px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="interactionButton">Click to Join</button>
+    <div id="viewerStats">Total viewers: <span id="viewerCount">0</span></div>
+    <div class="video-container">
+      <video id="videoPlayer" controls>
+        Your browser does not support the video tag.
+      </video>
+      <div id="message"></div>
+    </div>
+
+    <script>
+      const socket = io("http://ellenapp.duckdns.org:8080");
+      const video = document.getElementById("videoPlayer");
+      const viewerCountElement = document.getElementById("viewerCount");
+      const messageElement = document.getElementById("message");
+      const interactionButton = document.getElementById("interactionButton");
+      const viewerStats = document.getElementById("viewerStats");
+
+      let hasInteracted = false;
+      let syncThreshold = 0.5; // Synchronization threshold in seconds
+      let interactionId = localStorage.getItem("interactionId");
+      let lastServerUpdate = 0;
+
+      // Get video filename from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const videoFile = urlParams.get("video");
+
+      if (videoFile) {
+        video.src = `/video/${encodeURIComponent(videoFile)}`;
+      }
+
+      // Socket event listeners
+      socket.on("waitForInteraction", (data) => {
+        if (data.newViewer) {
+          if (!hasInteracted) {
+            showMessage(
+              "New viewer joined. Please click the 'Click to Join' button to resume the video.",
+              10000
+            );
+          } else {
+            showMessage(
+              "New viewer joined. Video paused. Waiting for new viewer to join.",
+              5000
+            );
+          }
+        } else if (data.viewerLeft) {
+          showMessage(
+            "A viewer has left. Video paused. Waiting for all viewers to be ready.",
+            5000
+          );
+        }
+      });
+
+      socket.on("viewerCount", (data) => {
+        viewerCountElement.textContent = data.totalViewers;
+        updateButtonText(data.interactedViewers, data.totalViewers);
+        if (data.allUsersInteracted && !hasInteracted) {
+          showMessage(
+            "All viewers have joined. The video will start soon!",
+            5000
+          );
+        }
+      });
+
+      // Helper functions
+      function updateButtonText(interactedViewers, totalViewers) {
+        if (hasInteracted) {
+          interactionButton.textContent = `Ellen Joined (${interactedViewers}/${totalViewers})`;
+          interactionButton.disabled = true;
+        } else {
+          interactionButton.textContent = `Click to Join (${interactedViewers}/${totalViewers})`;
+          interactionButton.disabled = false;
+        }
+      }
+
+      function showMessage(text, duration = 3000) {
+        messageElement.textContent = text;
+        messageElement.style.display = "block";
+        setTimeout(() => {
+          messageElement.style.display = "none";
+        }, duration);
+      }
+
+      // Interaction button click handler
+      interactionButton.addEventListener("click", () => {
+        if (!hasInteracted) {
+          interactionId = Date.now().toString();
+          localStorage.setItem("interactionId", interactionId);
+          socket.emit("userInteraction", interactionId);
+          hasInteracted = true;
+          interactionButton.disabled = true;
+          viewerStats.style.display = "block";
+        }
+      });
+
+      // Initially hide the viewer stats
+      viewerStats.style.display = "none";
+
+      // Handle video state updates from server
+      socket.on("videoStateUpdate", (state) => {
+        const now = Date.now();
+        const timeSinceUpdate = (now - state.lastUpdateTime) / 1000;
+        const adjustedCurrentTime =
+          state.currentTime + (state.isPlaying ? timeSinceUpdate : 0);
+
+        // Synchronize video time if difference is greater than threshold
+        if (Math.abs(video.currentTime - adjustedCurrentTime) > syncThreshold) {
+          video.currentTime = adjustedCurrentTime;
+        }
+
+        // Play or pause video based on server state
+        if (state.isPlaying && video.paused) {
+          video.play().catch((e) => console.error("Error playing video:", e));
+        } else if (!state.isPlaying && !video.paused) {
+          video.pause();
+        }
+
+        lastServerUpdate = now;
+      });
+
+      // Video event listeners
+      video.addEventListener("play", () => {
+        socket.emit("control", {
+          action: "play",
+          currentTime: video.currentTime,
+        });
+      });
+
+      video.addEventListener("pause", () => {
+        socket.emit("control", {
+          action: "pause",
+          currentTime: video.currentTime,
+        });
+      });
+
+      video.addEventListener("seeked", () => {
+        socket.emit("control", { action: "seek", time: video.currentTime });
+      });
+
+      // Periodically check and correct synchronization
+      function checkSynchronization() {
+        const now = Date.now();
+        const timeSinceUpdate = (now - lastServerUpdate) / 1000;
+
+        if (timeSinceUpdate > syncThreshold) {
+          socket.emit("control", { action: "seek", time: video.currentTime });
+        }
+      }
+
+      // Run synchronization check every second
+      setInterval(checkSynchronization, 1000);
+
+      // Handle control messages from server
+      socket.on("control", (data) => {
+        if (data.action === "play") {
+          video
+            .play()
+            .then(() => showMessage("Video playing"))
+            .catch((e) => {
+              console.error("Error playing video:", e);
+              showMessage(
+                "Error playing video. Please click the 'Ellens Joined' button and try again."
+              );
+            });
+        } else if (data.action === "pause") {
+          video.pause();
+          showMessage("Video paused. Waiting for all viewers to join.");
+        } else if (data.action === "seek") {
+          video.currentTime = data.time;
+        } else if (data.action === "clear") {
+          video.pause();
+          video.src = "";
+          showMessage("Stream ended by host.");
+        }
+      });
+
+      // Ensure video starts paused and show initial message
+      video.addEventListener("loadedmetadata", () => {
+        video.pause();
+        showMessage("Video loaded. Waiting for !pvid command to start.");
+      });
+
+      // Throttled function to emit time updates
+      const emitTimeUpdate = throttle(() => {
+        socket.emit("control", { action: "seek", time: video.currentTime });
+      }, 1000);
+
+      video.addEventListener("timeupdate", emitTimeUpdate);
+
+      // Throttle helper function
+      function throttle(func, limit) {
+        let inThrottle;
+        return function () {
+          const args = arguments;
+          const context = this;
+          if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => (inThrottle = false), limit);
+          }
+        };
+      }
+
+      // Send interaction status on reconnect
+      socket.on("connect", () => {
+        if (hasInteracted) {
+          socket.emit("userInteraction");
+        }
+      });
+
+      // Clear interaction ID when window is about to unload
+      window.addEventListener("beforeunload", () => {
+        localStorage.removeItem("interactionId");
+      });
+    </script>
+  </body>
+</html>

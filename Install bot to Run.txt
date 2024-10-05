@@ -1,0 +1,30 @@
+Install bot to Run
+
+step 1
+Node.js - https://nodejs.org/en
+
+step 2
+ffmpeg - https://ffmpeg.org/download.html#build-windows (Get the one that contain bin)
+
+    |copy C:\ffmpeg
+    |go to > view advanced system settings
+           > Environment variables > system variables > find "path" click press edit > New add C:\ffmpeg\bin
+    | check its runs cmd > ffmpeg
+
+step 3
+
+install dependencies
+
+npm install discord.js
+npm install distube
+npm install dotenv
+npm install @distube/spotify
+npm install @distube/soundcloud
+npm install @distube/yt-dlp
+npm install ffmpeg-static
+npm install opusscript
+npm install libsodium-wrappers
+npm install express
+npm install node-fetch@2
+npm install cors
+npm install socket.io

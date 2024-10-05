@@ -1,0 +1,27 @@
+{
+  "name": "ellen",
+  "version": "1.0.0",
+  "main": "ellen.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@distube/soundcloud": "^2.0.3",
+    "@distube/spotify": "^2.0.2",
+    "@distube/yt-dlp": "^2.0.1",
+    "cors": "^2.8.5",
+    "discord.js": "^14.16.3",
+    "distube": "^5.0.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.15",
+    "node-fetch": "^2.7.0",
+    "opusscript": "^0.0.8",
+    "socket.io": "^4.8.0"
+  }
+}
