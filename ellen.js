@@ -26,13 +26,14 @@ const client = new Client({
 const PORT = process.env.PORT;
 const DOMAIN = process.env.DOMAIN;
 const DUCKDNS_TOKEN = process.env.DUCKDNS_TOKEN;
+const STATIC_IP = process.env.STATIC_IP;
 
 // Global video state
 let videoState = {
   isPlaying: false,
   currentTime: 0,
   lastUpdateTime: Date.now(),
-  isPaused: false, // Add this new property
+  isPaused: false,
 };
 
 // Function to update DuckDNS with current IP addresses
@@ -301,7 +302,7 @@ client.on("messageCreate", async (message) => {
       message.channel.send(`Preparing to stream: ${selectedFile}`);
 
       activeStream = selectedFile;
-      const streamUrl = `http://${DOMAIN}:${PORT}/player?video=${encodeURIComponent(
+      const streamUrl = `http://${STATIC_IP}:${PORT}/player?video=${encodeURIComponent(
         selectedFile
       )}`;
 
@@ -445,8 +446,11 @@ const io = socketIo(server);
 app.use(
   cors({
     origin: [
-      "http://ellenapp.duckdns.org",
-      "http://ellenapp.duckdns.org:8080",
+      //"http://your.duckdns.org",
+      //"http://your.duckdns.org:8080",
+      `http://${STATIC_IP}`,
+      `http://${STATIC_IP}:${PORT}`,
+      `http://localhost:${PORT}`,
       `http://[::]:${PORT}`,
       `http://localhost:${PORT}`,
     ],
@@ -595,9 +599,8 @@ function updateViewerCounts() {
 }
 
 // Start the server
-server.listen(PORT, "::", () => {
-  console.log(`Server running on http://[::]:${PORT} (IPv6)`);
-  console.log(`Server also accessible via http://${DOMAIN}:${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://${STATIC_IP}:${PORT}`);
 });
 
 // Request logging middleware

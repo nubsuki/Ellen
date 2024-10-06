@@ -1,0 +1,20 @@
+version: "3"
+services:
+  ellen-bot:
+    image: /ellen:latest
+    container_name: ellen
+    ports:
+      - "8084:8084"
+      - "22:22"
+    environment:
+      - TOKEN=your discord bot token
+      - SPOTIFY_CLIENT_ID=your spotify client id
+      - SPOTIFY_CLIENT_SECRET=your spotify client secret
+      - PORT=8084
+      - HTTP_PORT=22
+      - STATIC_IP=your static ip
+      - DOMAIN= your duckdns domain
+      - DUCKDNS_TOKEN=your duckdns token
+      - VIDEO_DIRECTORY=/usr/src/app/videos
+    volumes:
+      - /path/to/videos:/usr/src/app/videos
