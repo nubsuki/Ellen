@@ -1,6 +1,9 @@
 # Use an official Node.js runtime as the base image
 FROM node:lts-alpine
 
+# Install FFmpeg and other necessary dependencies
+RUN apk add --no-cache ffmpeg
+
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
