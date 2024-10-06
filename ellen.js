@@ -555,15 +555,20 @@ io.on("connection", (socket) => {
   });
 
   socket.on("control", (data) => {
-    if (data.action === "play" || data.action === "pause") {
-      videoState.isPlaying = data.action === "play";
-      videoState.currentTime = data.currentTime;
-      videoState.lastUpdateTime = Date.now();
-      io.emit("videoStateUpdate", videoState);
-    } else if (data.action === "seek") {
-      videoState.currentTime = data.time;
-      videoState.lastUpdateTime = Date.now();
-      io.emit("videoStateUpdate", videoState);
+    try {
+      if (data.action === "play" || data.action === "pause") {
+        videoState.isPlaying = data.action === "play";
+        videoState.currentTime = data.currentTime;
+        videoState.lastUpdateTime = Date.now();
+        io.emit("videoStateUpdate", videoState);
+      } else if (data.action === "seek") {
+        videoState.currentTime = data.time;
+        videoState.lastUpdateTime = Date.now();
+        io.emit("videoStateUpdate", videoState);
+      }
+      console.log("Video state updated:", videoState);
+    } catch (error) {
+      console.error("Error handling control event:", error);
     }
   });
 });

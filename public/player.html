@@ -92,9 +92,10 @@
       const viewerStats = document.getElementById("viewerStats");
 
       let hasInteracted = false;
-      let syncThreshold = 0.5; // Synchronization threshold in seconds
+      let syncThreshold = 2; // Increase sync threshold to 2 seconds
       let interactionId = localStorage.getItem("interactionId");
       let lastServerUpdate = 0;
+      let localTimeUpdate = 0;
 
       // Get video filename from URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -178,8 +179,11 @@
         const adjustedCurrentTime =
           state.currentTime + (state.isPlaying ? timeSinceUpdate : 0);
 
-        // Synchronize video time if difference is greater than threshold
-        if (Math.abs(video.currentTime - adjustedCurrentTime) > syncThreshold) {
+        // Only sync if the difference is greater than threshold and not caused by local update
+        if (
+          Math.abs(video.currentTime - adjustedCurrentTime) > syncThreshold &&
+          now - localTimeUpdate > 1000
+        ) {
           video.currentTime = adjustedCurrentTime;
         }
 
@@ -193,70 +197,9 @@
         lastServerUpdate = now;
       });
 
-      // Video event listeners
-      video.addEventListener("play", () => {
-        socket.emit("control", {
-          action: "play",
-          currentTime: video.currentTime,
-        });
-      });
-
-      video.addEventListener("pause", () => {
-        socket.emit("control", {
-          action: "pause",
-          currentTime: video.currentTime,
-        });
-      });
-
-      video.addEventListener("seeked", () => {
-        socket.emit("control", { action: "seek", time: video.currentTime });
-      });
-
-      // Periodically check and correct synchronization
-      function checkSynchronization() {
-        const now = Date.now();
-        const timeSinceUpdate = (now - lastServerUpdate) / 1000;
-
-        if (timeSinceUpdate > syncThreshold) {
-          socket.emit("control", { action: "seek", time: video.currentTime });
-        }
-      }
-
-      // Run synchronization check every second
-      setInterval(checkSynchronization, 1000);
-
-      // Handle control messages from server
-      socket.on("control", (data) => {
-        if (data.action === "play") {
-          video
-            .play()
-            .then(() => showMessage("Video playing"))
-            .catch((e) => {
-              console.error("Error playing video:", e);
-              showMessage(
-                "Error playing video. Please click the 'Ellens Joined' button and try again."
-              );
-            });
-        } else if (data.action === "pause") {
-          video.pause();
-          showMessage("Video paused. Waiting for all viewers to join.");
-        } else if (data.action === "seek") {
-          video.currentTime = data.time;
-        } else if (data.action === "clear") {
-          video.pause();
-          video.src = "";
-          showMessage("Stream ended by host.");
-        }
-      });
-
-      // Ensure video starts paused and show initial message
-      video.addEventListener("loadedmetadata", () => {
-        video.pause();
-        showMessage("Video loaded. Waiting for !pvid command to start.");
-      });
-
       // Throttled function to emit time updates
       const emitTimeUpdate = throttle(() => {
+        localTimeUpdate = Date.now();
         socket.emit("control", { action: "seek", time: video.currentTime });
       }, 1000);
 
