@@ -14,7 +14,8 @@ RUN npm install
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 8080
+EXPOSE 8084
+EXPOSE 80
 
 # Command to run the application
 CMD ["node", "ellen.js"]
