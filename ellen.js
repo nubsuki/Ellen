@@ -97,7 +97,7 @@ const distube = new DisTube(client, {
       },
     }),
     new SoundCloudPlugin(),
-    new YtDlpPlugin({ update: false }),
+    new YtDlpPlugin({ update: true }),
   ],
 });
 
