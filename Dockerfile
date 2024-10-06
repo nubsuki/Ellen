@@ -2,7 +2,7 @@
 FROM node:lts-alpine
 
 # Install FFmpeg and other necessary dependencies
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg python3
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
