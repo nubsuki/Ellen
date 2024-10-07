@@ -86,26 +86,30 @@ distube.on("finish", (queue) => {
 distube
   .on("playSong", (queue, song) => {
     queue.textChannel.send(
-      `🎶 Now playing: **${song.name}** - \`${song.formattedDuration}\`\nRequested by: ${song.user.username}`
+      `Alright, now playing: **${song.name}** - \`${song.formattedDuration}\`. ${song.user.username} requested this. Hope it's worth the effort.`
     );
     updateBotActivity(song);
   })
   .on("addSong", (queue, song) => {
     queue.textChannel.send(
-      `✅ Added **${song.name}** - \`${
+      `Fine, I added **${song.name}** - \`${
         song.formattedDuration
-      }\` to the queue by ${song.user.username}. There are now ${
+      }\` to the queue. ${
+        song.user.username
+      }, you better appreciate this. Now we've got ${
         queue.songs.length - 1
-      } songs in the queue.`
+      } songs waiting. Happy?`
     );
   })
   .on("addList", (queue, playlist) => {
     queue.textChannel.send(
-      `✅ Added \`${playlist.name}\` playlist (${
+      `Ugh, a whole playlist? Really? Fine, I added \`${playlist.name}\` (${
         playlist.songs.length
-      } songs) to queue by ${playlist.user.username}. There are now ${
+      } songs) to the queue. ${
+        playlist.user.username
+      }, you're lucky I'm in a good mood. Now there are ${
         queue.songs.length - 1
-      } songs in the queue.`
+      } songs waiting. Don't make me regret this.`
     );
   });
 
@@ -117,7 +121,9 @@ distube.on("error", (channel, error) => {
       channel.type === "GUILD_TEXT" ? channel : channel.textChannel;
     if (sendChannel && typeof sendChannel.send === "function") {
       sendChannel
-        .send(`An error occurred while playing music: ${error.message}`)
+        .send(
+          `Ugh, something went wrong with the music. Can someone else deal with this? I'm on my break.`
+        )
         .catch(console.error);
     }
   }
@@ -125,7 +131,9 @@ distube.on("error", (channel, error) => {
 
 // Discord client ready event
 client.once("ready", () => {
-  console.log(`${client.user.tag} is online and ready to play music!`);
+  console.log(
+    `${client.user.tag} is online and ready to reluctantly assist...`
+  );
   updateBotActivity(null);
 });
 
@@ -140,13 +148,13 @@ client.on("messageCreate", async (message) => {
   if (command === ".play") {
     if (!message.member.voice.channel) {
       return message.channel.send(
-        "Ugh, you gotta be in a voice channel if you want me to play something. I'm not gonna shout across the server, you know?"
+        "Hey genius, you gotta be in a voice channel if you want me to play something. I'm not gonna shout across the server, you know?"
       );
     }
     let query = args.join(" ");
     if (!query)
       return message.channel.send(
-        "Hey, I'm not a mind reader. What do you want me to play?"
+        "What, you want me to read your mind? Tell me what to play or let me get back to my nap."
       );
 
     // Improved YouTube URL handling
@@ -183,16 +191,16 @@ client.on("messageCreate", async (message) => {
       const queue = distube.getQueue(message);
       if (queue && queue.songs.length > 1) {
         message.channel.send(
-          `Fine, I added it to the queue. There are now ${
+          `Alright, alright, I added it to the queue. There are now ${
             queue.songs.length - 1
-          } songs waiting. Happy now?`
+          } songs waiting. Don't say I never do anything for you.`
         );
       }
     } catch (error) {
       console.error("Error playing song:", error);
       message.channel
         .send(
-          `Ugh, something went wrong. Maybe try a different song? I'm too lazy to figure out what the problem is.`
+          `Look, something's not working. Maybe try a different song? I'm too busy enjoying my lollipop to figure out what's wrong.`
         )
         .catch(console.error);
     }
@@ -202,26 +210,33 @@ client.on("messageCreate", async (message) => {
     const queue = distube.getQueue(message);
     if (queue) {
       queue.stop();
-      message.channel.send("Music stopped and I'm leaving the channel!");
+      message.channel.send(
+        "Fine, I'm stopping the music and leaving. Happy now?"
+      );
     } else {
-      message.channel.send("There is no music playing.");
+      message.channel.send("There's no music playing. Are you hearing things?");
     }
   }
 
   if (command === ".skip") {
     distube.skip(message);
-    message.channel.send("Skipped to the next song!");
+    message.channel.send("Skipped. Hope the next song is worth my energy.");
   }
 
   if (command === ".queue") {
     const queue = distube.getQueue(message);
-    if (!queue) return message.channel.send("The queue is empty!");
+    if (!queue)
+      return message.channel.send(
+        "The queue is as empty as my motivation right now."
+      );
     message.channel.send(
-      `📃 **Server Queue**\nCurrently playing: ${queue.songs[0].name} - \`${
-        queue.songs[0].formattedDuration
-      }\` (requested by ${
+      `Alright, here's what we've got:\nPlaying now: ${
+        queue.songs[0].name
+      } - \`${queue.songs[0].formattedDuration}\` (${
         queue.songs[0].user.username
-      })\nNumber of songs in queue: ${queue.songs.length - 1}`
+      }'s fault)\nThere are ${
+        queue.songs.length - 1
+      } more songs waiting. Don't make me list them all.`
     );
   }
 
@@ -231,12 +246,18 @@ client.on("messageCreate", async (message) => {
       const connection = distube.voices.get(voiceChannel);
       if (connection) {
         connection.leave();
-        message.channel.send("Disconnected from the voice channel.");
+        message.channel.send(
+          "I'm out. Call me when you've got something interesting."
+        );
       } else {
-        message.channel.send("The bot is not connected to a voice channel!");
+        message.channel.send(
+          "I'm not even in a voice channel. Are you seeing things?"
+        );
       }
     } else {
-      message.channel.send("You need to be in a voice channel to disconnect!");
+      message.channel.send(
+        "You're not in a voice channel. How am I supposed to leave?"
+      );
     }
   }
 
@@ -266,35 +287,35 @@ client.on("messageCreate", async (message) => {
   if (command === ".stream") {
     if (!message.member.voice.channel) {
       return message.channel.send(
-        "You need to be in a voice channel to start a video!"
+        "Ugh, you need to be in a voice channel. I'm not gonna yell across the server for you."
       );
     }
 
     const videoDirectory = process.env.VIDEO_DIRECTORY;
     if (!videoDirectory) {
       return message.channel.send(
-        "Video directory not configured. Please set the VIDEO_DIRECTORY in your .env file."
+        "Someone forgot to set up the video directory. Not my problem."
       );
     }
 
     const fileNumber = parseInt(args[0]);
     if (isNaN(fileNumber) || fileNumber < 1) {
       return message.channel.send(
-        "Please provide a valid file number to stream."
+        "Really? Give me a valid file number or don't bother me at all."
       );
     }
 
     const videoFiles = getVideoFiles(videoDirectory);
     if (fileNumber > videoFiles.length) {
       return message.channel.send(
-        "Invalid file number. Use .search to see available files."
+        "That file doesn't exist. Use .search if counting is too hard for you."
       );
     }
 
     const selectedFile = videoFiles[fileNumber - 1];
 
     try {
-      message.channel.send(`Preparing to stream: ${selectedFile}`);
+      message.channel.send(`Fine, I'll set up: ${selectedFile}. Happy now?`);
 
       activeStream = selectedFile;
       const streamUrl = `http://${STATIC_IP}:${PORT}/player?video=${encodeURIComponent(
@@ -303,7 +324,7 @@ client.on("messageCreate", async (message) => {
 
       // Send a message with a clickable link
       message.channel.send({
-        content: "Video ready!",
+        content: "Video's ready. Don't say I never do anything for you.",
         components: [
           {
             type: 1,
@@ -311,7 +332,7 @@ client.on("messageCreate", async (message) => {
               {
                 type: 2,
                 style: 5,
-                label: "Watch here",
+                label: "Watch here, I guess",
                 url: streamUrl,
               },
             ],
@@ -321,7 +342,7 @@ client.on("messageCreate", async (message) => {
     } catch (error) {
       console.error("Error preparing video:", error.message);
       message.channel.send(
-        `An error occurred while trying to prepare the video: ${error.message}`
+        `Ugh, something went wrong. Can't you pick an easier video next time?`
       );
     }
   }
@@ -332,15 +353,19 @@ client.on("messageCreate", async (message) => {
         videoState.isPlaying = true;
         videoState.isPaused = false;
         io.emit("control", { action: "play" });
-        message.channel.send("Video playback started for all viewers.");
+        message.channel.send(
+          "Alright, video's playing. Try not to fall asleep."
+        );
       } else {
         io.emit("waitForInteraction");
         message.channel.send(
-          "Waiting for all viewers to join. Please ask viewers to click the 'Ellen Joined' button."
+          "We're waiting on some slowpokes to join. Tell them to hit the 'Ellen Joined' button already."
         );
       }
     } else {
-      message.channel.send("No active stream. Use .stream to start one.");
+      message.channel.send(
+        "There's no stream. Use .stream if you want to watch something."
+      );
     }
   }
 
@@ -348,9 +373,9 @@ client.on("messageCreate", async (message) => {
     if (activeStream) {
       videoState.isPlaying = false;
       io.emit("control", { action: "pause" });
-      message.channel.send("Video playback paused for all viewers.");
+      message.channel.send("Video paused. What, need a snack break already?");
     } else {
-      message.channel.send("No active stream.");
+      message.channel.send("There's nothing playing. Are you seeing things?");
     }
   }
 
@@ -358,9 +383,11 @@ client.on("messageCreate", async (message) => {
     if (activeStream) {
       videoState.isPlaying = true;
       io.emit("control", { action: "play" });
-      message.channel.send("Video playback resumed for all viewers.");
+      message.channel.send("Video's back on. Try to stay awake this time.");
     } else {
-      message.channel.send("No active stream.");
+      message.channel.send(
+        "There's no video to resume. Maybe start one first?"
+      );
     }
   }
 
@@ -368,7 +395,9 @@ client.on("messageCreate", async (message) => {
     if (activeStream) {
       activeStream = null;
       io.emit("control", { action: "clear" });
-      message.channel.send("Stream ended and cleared.");
+      message.channel.send(
+        "Stream's over. Hope you enjoyed the show, or whatever."
+      );
 
       // Delete the previous URL message
       message.channel.messages
@@ -386,7 +415,9 @@ client.on("messageCreate", async (message) => {
         })
         .catch(console.error);
     } else {
-      message.channel.send("No active stream to clear.");
+      message.channel.send(
+        "There's nothing to clear. Are you just pushing buttons for fun?"
+      );
     }
   }
 
@@ -394,10 +425,12 @@ client.on("messageCreate", async (message) => {
     if (activeStream) {
       io.emit("control", { action: "forcePlay", bypass: true });
       message.channel.send(
-        "Forcing video playback for all viewers. This may not work on all browsers due to autoplay restrictions."
+        "Forcing the video to play. If it doesn't work, blame your browser, not me."
       );
     } else {
-      message.channel.send("No active stream. Use .stream to start one.");
+      message.channel.send(
+        "No video to force play. Maybe start one with .stream? Just a thought."
+      );
     }
   }
 
@@ -409,7 +442,7 @@ client.on("messageCreate", async (message) => {
     const userPrompt = args.join(" ");
     if (!userPrompt)
       return message.channel.send(
-        "Hey, got something to say? I'm all ears... or circuits, I guess."
+        "What, cat got your tongue? Spit it out or let me get back to my lollipop."
       );
 
     async function runChat() {
@@ -597,6 +630,7 @@ io.on("connection", (socket) => {
       videoState.isPlaying = false;
       io.emit("control", { action: "pause" });
       io.emit("waitForInteraction", { viewerLeft: true });
+      console.log("Someone bailed. Pausing the video for the rest of you.");
     }
   });
 
@@ -664,11 +698,15 @@ function updateViewerCounts() {
 
 // Start the server
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on http://${STATIC_IP}:${PORT}`);
+  console.log(
+    `Server's up on http://${STATIC_IP}:${PORT}. Don't break anything.`
+  );
 });
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`Received ${req.method} request for ${req.url} from ${req.ip}`);
+  console.log(
+    `Got a ${req.method} request for ${req.url} from ${req.ip}. Exciting stuff.`
+  );
   next();
 });
