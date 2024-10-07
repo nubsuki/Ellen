@@ -1,4 +1,3 @@
-```markdown
 # Discord Music and Video Streaming with AI Chat Bot 
 
 This project is a Discord bot built with **Discord.js** and **DisTube**, designed for playing music from YouTube, Spotify, and SoundCloud, and supporting video streaming for users via a synchronized web player. 
@@ -116,4 +115,4 @@ The bot will provide the specific link in chat. Make sure all viewers press the 
 ## 📝 License
 
 This project is licensed under the [MIT License](LICENSE).
-```
+
