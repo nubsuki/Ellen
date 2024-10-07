@@ -43,7 +43,7 @@ function updateBotActivity(song) {
       });
       console.log("Activity updated to current song");
     } else {
-      client.user.setActivity("Waiting for you to call me.. O_O", {
+      client.user.setActivity("Daydreaming about easier tasks", {
         type: ActivityType.Playing,
       });
       console.log("Activity set to waiting");
@@ -213,6 +213,7 @@ client.on("messageCreate", async (message) => {
       message.channel.send(
         "Fine, I'm stopping the music and leaving. Happy now?"
       );
+      updateBotActivity(null);
     } else {
       message.channel.send("There's no music playing. Are you hearing things?");
     }
@@ -249,6 +250,7 @@ client.on("messageCreate", async (message) => {
         message.channel.send(
           "I'm out. Call me when you've got something interesting."
         );
+        updateBotActivity(null);
       } else {
         message.channel.send(
           "I'm not even in a voice channel. Are you seeing things?"
