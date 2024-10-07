@@ -114,5 +114,5 @@ The bot will provide the specific link in chat. Make sure all viewers press the 
 
 ## 📝 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is for personal use and is distributed "as-is". Make sure to back up your files before using..
 
