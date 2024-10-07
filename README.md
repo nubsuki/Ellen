@@ -40,11 +40,7 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
    ffmpeg
    ```
 
-   If you're running this on Docker, you can skip the above step—`ffmpeg` is already included in the Docker setup. If using `docker-compose.yml`, specify the image:
-
-   ```yaml
-   image: nubsuki/ellen:latest
-   ```
+   If you're running this on Docker, you can skip the above step—`ffmpeg` is already included in the Docker setup. If using `docker-compose.yml`, specify the image.
 
 3. **Set up environment variables**: Create a `.env` file in the root directory with the following configuration:
 
