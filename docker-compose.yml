@@ -13,8 +13,7 @@ services:
       - PORT=8084
       - HTTP_PORT=22
       - STATIC_IP=your static ip
-      - DOMAIN= your duckdns domain
-      - DUCKDNS_TOKEN=your duckdns token
+      - GOOGLE_AI_API_KEY=your_api_key_here
       - VIDEO_DIRECTORY=/usr/src/app/videos
     volumes:
       - /path/to/videos:/usr/src/app/videos

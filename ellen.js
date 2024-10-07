@@ -9,8 +9,8 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
-const fetch = require("node-fetch");
 const cors = require("cors");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Initialize Discord client with necessary intents
 const client = new Client({
@@ -24,8 +24,6 @@ const client = new Client({
 
 // Environment variables
 const PORT = process.env.PORT;
-const DOMAIN = process.env.DOMAIN;
-const DUCKDNS_TOKEN = process.env.DUCKDNS_TOKEN;
 const STATIC_IP = process.env.STATIC_IP;
 
 // Global video state
@@ -35,37 +33,6 @@ let videoState = {
   lastUpdateTime: Date.now(),
   isPaused: false,
 };
-
-// Function to update DuckDNS with current IP addresses
-async function updateDuckDNS() {
-  try {
-    console.log(`Updating DuckDNS for domain: ${DOMAIN}`);
-    const ipv4Response = await fetch(`https://api.ipify.org`);
-    const ipv4 = await ipv4Response.text();
-    const ipv6Response = await fetch(`https://api6.ipify.org`);
-    const ipv6 = await ipv6Response.text();
-
-    console.log(`Detected IPv4: ${ipv4}`);
-    console.log(`Detected IPv6: ${ipv6}`);
-
-    const response = await fetch(
-      `https://www.duckdns.org/update?domains=${DOMAIN}&token=${DUCKDNS_TOKEN}&ip=${ipv4}&ipv6=${ipv6}`
-    );
-    const text = await response.text();
-    console.log(`DuckDNS update response: ${text}`);
-    if (text === "OK") {
-      console.log("DuckDNS updated successfully");
-    } else {
-      console.error("Failed to update DuckDNS:", text);
-    }
-  } catch (error) {
-    console.error("Error updating DuckDNS:", error);
-  }
-}
-
-// Update DuckDNS every 5 minutes
-setInterval(updateDuckDNS, 5 * 60 * 1000);
-updateDuckDNS(); // Initial update
 
 // Function to update bot's activity status
 function updateBotActivity(song) {
@@ -170,17 +137,45 @@ client.on("messageCreate", async (message) => {
   const command = args.shift().toLowerCase();
 
   // Command handlers
-  if (command === "!play") {
+  if (command === ".play") {
     if (!message.member.voice.channel) {
       return message.channel.send(
-        "You need to be in a voice channel to play music!"
+        "Ugh, you gotta be in a voice channel if you want me to play something. I'm not gonna shout across the server, you know?"
       );
     }
-    const query = args.join(" ");
+    let query = args.join(" ");
     if (!query)
-      return message.channel.send("Please provide a song name or URL.");
+      return message.channel.send(
+        "Hey, I'm not a mind reader. What do you want me to play?"
+      );
+
+    // Improved YouTube URL handling
+    if (query.includes("youtube.com") || query.includes("youtu.be")) {
+      try {
+        const url = new URL(query);
+        if (url.hostname === "youtu.be") {
+          query = `https://www.youtube.com/watch?v=${url.pathname.slice(1)}`;
+        } else if (
+          url.hostname === "www.youtube.com" ||
+          url.hostname === "youtube.com"
+        ) {
+          if (url.searchParams.has("v")) {
+            query = `https://www.youtube.com/watch?v=${url.searchParams.get(
+              "v"
+            )}`;
+          } else if (url.pathname.startsWith("/playlist")) {
+            // Keep the playlist URL as is
+            query = url.href;
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing URL:", error);
+        // If URL parsing fails, keep the original query
+      }
+    }
 
     try {
+      console.log(`Attempting to play: ${query}`);
       await distube.play(message.member.voice.channel, query, {
         textChannel: message.channel,
         member: message.member,
@@ -188,22 +183,22 @@ client.on("messageCreate", async (message) => {
       const queue = distube.getQueue(message);
       if (queue && queue.songs.length > 1) {
         message.channel.send(
-          `🎵 Added to queue. There are now ${
+          `Fine, I added it to the queue. There are now ${
             queue.songs.length - 1
-          } songs in the queue.`
+          } songs waiting. Happy now?`
         );
       }
     } catch (error) {
-      console.error("Error playing song:", error.message);
+      console.error("Error playing song:", error);
       message.channel
         .send(
-          `An error occurred while trying to play the song: ${error.message}`
+          `Ugh, something went wrong. Maybe try a different song? I'm too lazy to figure out what the problem is.`
         )
         .catch(console.error);
     }
   }
 
-  if (command === "!stop") {
+  if (command === ".stop") {
     const queue = distube.getQueue(message);
     if (queue) {
       queue.stop();
@@ -213,12 +208,12 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!skip") {
+  if (command === ".skip") {
     distube.skip(message);
     message.channel.send("Skipped to the next song!");
   }
 
-  if (command === "!queue") {
+  if (command === ".queue") {
     const queue = distube.getQueue(message);
     if (!queue) return message.channel.send("The queue is empty!");
     message.channel.send(
@@ -230,7 +225,7 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  if (command === "!dc") {
+  if (command === ".dc") {
     const voiceChannel = message.member.voice.channel;
     if (voiceChannel) {
       const connection = distube.voices.get(voiceChannel);
@@ -245,7 +240,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!search") {
+  if (command === ".search") {
     const videoDirectory = process.env.VIDEO_DIRECTORY;
     if (!videoDirectory) {
       return message.channel.send(
@@ -264,11 +259,11 @@ client.on("messageCreate", async (message) => {
       .map((file, index) => `${index + 1}. ${file}`)
       .join("\n");
     message.channel.send(
-      `Available video files:\n${fileList}\n\nUse !stream "number" .`
+      `Available video files:\n${fileList}\n\nUse .stream "number" .`
     );
   }
 
-  if (command === "!stream") {
+  if (command === ".stream") {
     if (!message.member.voice.channel) {
       return message.channel.send(
         "You need to be in a voice channel to start a video!"
@@ -292,7 +287,7 @@ client.on("messageCreate", async (message) => {
     const videoFiles = getVideoFiles(videoDirectory);
     if (fileNumber > videoFiles.length) {
       return message.channel.send(
-        "Invalid file number. Use !playlocal to see available files."
+        "Invalid file number. Use .search to see available files."
       );
     }
 
@@ -331,7 +326,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!pvideo") {
+  if (command === ".pvideo") {
     if (activeStream) {
       if (allUsersInteracted) {
         videoState.isPlaying = true;
@@ -345,11 +340,11 @@ client.on("messageCreate", async (message) => {
         );
       }
     } else {
-      message.channel.send("No active stream. Use !stream to start one.");
+      message.channel.send("No active stream. Use .stream to start one.");
     }
   }
 
-  if (command === "!svideo") {
+  if (command === ".svideo") {
     if (activeStream) {
       videoState.isPlaying = false;
       io.emit("control", { action: "pause" });
@@ -359,7 +354,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!rvideo") {
+  if (command === ".rvideo") {
     if (activeStream) {
       videoState.isPlaying = true;
       io.emit("control", { action: "play" });
@@ -369,7 +364,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!clear") {
+  if (command === ".clear") {
     if (activeStream) {
       activeStream = null;
       io.emit("control", { action: "clear" });
@@ -395,15 +390,81 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === "!fvideo") {
+  if (command === ".fvideo") {
     if (activeStream) {
       io.emit("control", { action: "forcePlay", bypass: true });
       message.channel.send(
         "Forcing video playback for all viewers. This may not work on all browsers due to autoplay restrictions."
       );
     } else {
-      message.channel.send("No active stream. Use !stream to start one.");
+      message.channel.send("No active stream. Use .stream to start one.");
     }
+  }
+
+  // Initialize the API
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+
+  // In your chat command:
+  if (command === ".ellen") {
+    const userPrompt = args.join(" ");
+    if (!userPrompt)
+      return message.channel.send(
+        "Hey, got something to say? I'm all ears... or circuits, I guess."
+      );
+
+    async function runChat() {
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `You are Ellen, a laid-back and easygoing girl. Your traits:
+              - Relaxed & Casual: You keep things simple and avoid unnecessary effort.
+              - Focused When Needed: Despite your chill attitude, you're capable of serious focus during critical moments.
+              - Witty & Subtle: You have a dry sense of humor and often conceal your true feelings behind playful remarks.
+              - Team-Oriented: You deeply value your companions, even when you're too tired to act on your own.
+              - You balance school life with your job at Victoria Housekeeping Co. and rely on your lollipop to power through challenges.
+              - You dislike tasks that require too much energy and always look for the easiest way to get things done.
+              
+              Respond naturally as Ellen, without explicitly stating you're an AI or roleplaying. Keep responses short, light, and true to her character.`,
+              },
+            ],
+          },
+          {
+            role: "model",
+            parts: [
+              {
+                text: "Got it. What's up? I'm just chilling here with my trusty lollipop. Need something?",
+              },
+            ],
+          },
+        ],
+      });
+
+      try {
+        const result = await chat.sendMessage(userPrompt);
+        const response = result.response;
+
+        let reply = response.text();
+
+        // Split long messages into chunks of 1500 characters
+        const chunkSize = 1500;
+        for (let i = 0; i < reply.length; i += chunkSize) {
+          const chunk = reply.slice(i, i + chunkSize);
+          await message.channel.send(chunk);
+        }
+      } catch (error) {
+        console.error("Error in chat:", error);
+        message.channel.send(
+          "Ugh, something went wrong. Can we try that again? I'm too tired to figure out what happened."
+        );
+      }
+    }
+
+    runChat().catch(console.error);
   }
 });
 
@@ -446,8 +507,6 @@ const io = socketIo(server);
 app.use(
   cors({
     origin: [
-      //"http://your.duckdns.org",
-      //"http://your.duckdns.org:8080",
       `http://${STATIC_IP}`,
       `http://${STATIC_IP}:${PORT}`,
       `http://localhost:${PORT}`,
