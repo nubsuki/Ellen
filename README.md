@@ -11,62 +11,39 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
 
 ## 🛠️ Installation
 
-1. **Clone the repository**:
+1. Create and edit the `docker-compose.yml` file to configure the environment:
 
-   ```bash
-   git clone https://github.com/nubsuki/Ellen.git
-   cd Ellen
-   ```
+    ```bash
+    nano docker-compose.yml
+    ```
 
-2. **Install dependencies**:
+    `docker-compose.yml`:
 
-   ```bash
-   npm install
-   ```
+    ```yaml
+    version: '3'
+    services:
+      pteropal:
+        image: nubsuki/ellen
+        container_name: ellen
+        ports:
+         - 8084:8084 # Your port
+        environment:
+         - TOKEN=your discord bot token
+         - SPOTIFY_CLIENT_ID=your spotify client id
+         - SPOTIFY_CLIENT_SECRET=your spotify client secret
+         - PORT=8084
+         - STATIC_IP=your static ip
+         - GOOGLE_AI_API_KEY=your_api_key_here
+         - VIDEO_DIRECTORY=/usr/src/app/videos
+        volumes:
+         - /path/to/videos:/usr/src/app/videos
+        restart: unless-stopped
+    ```
+2. Start the bot:
 
-   You can also run the bot on Docker. Most of the configuration is already set up for you. Make sure you run all the dependencies and ensure you have `ffmpeg` installed.
-
-   - Get `ffmpeg-git-full.7z`: [Download here](https://www.gyan.dev/ffmpeg/builds/)
-   - Get the version that contains `bin`: `ffmpeg-git-full.7z`
-
-   Set up `ffmpeg`:
-
-   ```bash
-   # Copy ffmpeg to a directory, e.g., C:\ffmpeg
-   # Go to > View Advanced System Settings > Environment Variables
-   # Under System Variables, find "Path", click "Edit", then "New" and add C:\ffmpeg\bin
-
-   # Check installation by running:
-   ffmpeg
-   ```
-
-   If you're running this on Docker, you can skip the above step—`ffmpeg` is already included in the Docker setup. If using `docker-compose.yml`, specify the image.
-
-3. **Set up environment variables**: Create a `.env` file in the root directory with the following configuration:
-
-   ```bash
-   TOKEN=your_discord_token
-   SPOTIFY_CLIENT_ID=your_spotify_client_id
-   SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   VIDEO_DIRECTORY=path_to_video_directory
-   STATIC_IP=your_static_ip_address
-   GOOGLE_AI_API_KEY=your_google_ai_api_key
-   ```
-
-   - Create your bot: [Discord Developer Portal](https://discord.com/developers/applications)
-   - Get Google AI API Key: [Google AI API Key](https://ai.google.dev/gemini-api/docs/api-key)
-   - Get Spotify API Key: [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-
-   **Example**:
-   
-   - For `VIDEO_DIRECTORY`: use `C:\Movies`
-   - No quotes around tokens; format should be `TOKEN=your_token`.
-
-4. **Run the bot**:
-
-   ```bash
-   node index.js
-   ```
+    ```bash
+    docker-compose up -d
+    ```
 
 ## ⚙️ Usage
 
@@ -87,16 +64,6 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
 
 ### Chat AI Interaction:
 - `.ellen [message]`: Ask the bot for some sarcastic help, powered by Google AI. 
-
-## 📂 File Structure
-
-```
-.
-├── public             # Static files for the web player
-├── src                # Core bot source code
-├── .env               # Environment configuration
-└── README.md          # Project documentation
-```
 
 ## 🌐 Web Interface
 
