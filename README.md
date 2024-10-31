@@ -22,7 +22,7 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
     ```yaml
     version: '3'
     services:
-      pteropal:
+      ellen:
         image: nubsuki/ellen
         container_name: ellen
         ports:
