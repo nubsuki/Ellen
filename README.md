@@ -76,6 +76,8 @@ http://[STATIC_IP]:[PORT]/player
 
 The bot will provide the specific link in chat. Make sure all viewers press the **click to join** button to synchronize.
 
+**Want to test the bot?** Feel free to join, test, and leave anytime! [Discord](https://discord.gg/4tjzMpHxKY)
+
 ## 📝 License
 
 This project is for personal use and is distributed "as-is".
