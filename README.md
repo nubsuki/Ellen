@@ -28,13 +28,13 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
         ports:
          - 8084:8084 # Your port
         environment:
-         - TOKEN=your discord bot token
-         - SPOTIFY_CLIENT_ID=your spotify client id
-         - SPOTIFY_CLIENT_SECRET=your spotify client secret
-         - PORT=8084
-         - STATIC_IP=your static ip
-         - GOOGLE_AI_API_KEY=your_api_key_here
-         - VIDEO_DIRECTORY=/usr/src/app/videos
+         - TOKEN= # your discord bot token
+         - SPOTIFY_CLIENT_ID= # your spotify client id
+         - SPOTIFY_CLIENT_SECRET= # your spotify client secret
+         - PORT=8084 # Your port
+         - STATIC_IP= # your static ip
+         - GOOGLE_AI_API_KEY= # your_api_key_here
+         - VIDEO_DIRECTORY= /usr/src/app/videos
         volumes:
          - /path/to/videos:/usr/src/app/videos
         restart: unless-stopped
