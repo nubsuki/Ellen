@@ -35,6 +35,7 @@ This project is a Discord bot built with **Discord.js** and **DisTube**, designe
          - STATIC_IP= # your static ip
          - GOOGLE_AI_API_KEY= # your_api_key_here
          - VIDEO_DIRECTORY= /usr/src/app/videos
+         - COMMAND_PREFIX= #your.command.prefix if you haven setup default will be used "."
         volumes:
          - /path/to/videos:/usr/src/app/videos
         restart: unless-stopped
