@@ -25,6 +25,7 @@ const client = new Client({
 // Environment variables
 const PORT = process.env.PORT;
 const STATIC_IP = process.env.STATIC_IP;
+const COMMAND_PREFIX = process.env.COMMAND_PREFIX || ".";
 
 // Global video state
 let videoState = {
@@ -86,7 +87,7 @@ distube.on("finish", (queue) => {
 distube
   .on("playSong", (queue, song) => {
     queue.textChannel.send(
-      `Alright, now playing: **${song.name}** - \`${song.formattedDuration}\`. ${song.user.username} requested this. Hope it's worth the effort.`
+      `Alright, now playing: **${song.name}** - \`${song.formattedDuration}\`. ${song.user.username} requested this.`
     );
     updateBotActivity(song);
   })
@@ -94,22 +95,18 @@ distube
     queue.textChannel.send(
       `Fine, I added **${song.name}** - \`${
         song.formattedDuration
-      }\` to the queue. ${
-        song.user.username
-      }, you better appreciate this. Now we've got ${
+      }\` to the queue. ${song.user.username}, Now we've got ${
         queue.songs.length - 1
-      } songs waiting. Happy?`
+      } songs waiting.`
     );
   })
   .on("addList", (queue, playlist) => {
     queue.textChannel.send(
       `Ugh, a whole playlist? Really? Fine, I added \`${playlist.name}\` (${
         playlist.songs.length
-      } songs) to the queue. ${
-        playlist.user.username
-      }, you're lucky I'm in a good mood. Now there are ${
+      } songs) to the queue. ${playlist.user.username}, Now there are ${
         queue.songs.length - 1
-      } songs waiting. Don't make me regret this.`
+      } songs waiting.`
     );
   });
 
@@ -144,8 +141,14 @@ client.on("messageCreate", async (message) => {
   const args = message.content.split(" ");
   const command = args.shift().toLowerCase();
 
+  // Check if the command starts with the defined prefix
+  if (!command.startsWith(COMMAND_PREFIX)) return;
+
+  // Remove the prefix from the command
+  const actualCommand = command.slice(COMMAND_PREFIX.length);
+
   // Command handlers
-  if (command === ".play") {
+  if (actualCommand === "play") {
     if (!message.member.voice.channel) {
       return message.channel.send(
         "Hey genius, you gotta be in a voice channel if you want me to play something. I'm not gonna shout across the server, you know?"
@@ -206,7 +209,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".stop") {
+  if (actualCommand === "stop") {
     const queue = distube.getQueue(message);
     if (queue) {
       queue.stop();
@@ -219,12 +222,12 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".skip") {
+  if (actualCommand === "skip") {
     distube.skip(message);
     message.channel.send("Skipped. Hope the next song is worth my energy.");
   }
 
-  if (command === ".queue") {
+  if (actualCommand === "queue") {
     const queue = distube.getQueue(message);
     if (!queue)
       return message.channel.send(
@@ -241,7 +244,7 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  if (command === ".dc") {
+  if (actualCommand === "dc") {
     const voiceChannel = message.member.voice.channel;
     if (voiceChannel) {
       const connection = distube.voices.get(voiceChannel);
@@ -263,11 +266,12 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".search") {
+  if (actualCommand === "search") {
     const videoDirectory = process.env.VIDEO_DIRECTORY;
-    if (!videoDirectory) {
+    const staticIp = process.env.STATIC_IP;
+    if (!videoDirectory || !staticIp) {
       return message.channel.send(
-        "Video directory not configured. Please set the VIDEO_DIRECTORY in your .env file."
+        "Someone forgot to set up the video directory and the ip. Not my problem."
       );
     }
 
@@ -286,7 +290,7 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  if (command === ".stream") {
+  if (actualCommand === "stream") {
     if (!message.member.voice.channel) {
       return message.channel.send(
         "Ugh, you need to be in a voice channel. I'm not gonna yell across the server for you."
@@ -294,9 +298,10 @@ client.on("messageCreate", async (message) => {
     }
 
     const videoDirectory = process.env.VIDEO_DIRECTORY;
-    if (!videoDirectory) {
+    const staticIp = process.env.STATIC_IP;
+    if (!videoDirectory || !staticIp) {
       return message.channel.send(
-        "Someone forgot to set up the video directory. Not my problem."
+        "Someone forgot to set up the video directory and the ip. Not my problem."
       );
     }
 
@@ -349,7 +354,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".pvideo") {
+  if (actualCommand === "pvideo") {
     if (activeStream) {
       if (allUsersInteracted) {
         videoState.isPlaying = true;
@@ -371,7 +376,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".svideo") {
+  if (actualCommand === "svideo") {
     if (activeStream) {
       videoState.isPlaying = false;
       io.emit("control", { action: "pause" });
@@ -381,7 +386,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".rvideo") {
+  if (actualCommand === "rvideo") {
     if (activeStream) {
       videoState.isPlaying = true;
       io.emit("control", { action: "play" });
@@ -393,7 +398,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".clear") {
+  if (actualCommand === "clear") {
     if (activeStream) {
       activeStream = null;
       io.emit("control", { action: "clear" });
@@ -423,7 +428,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (command === ".fvideo") {
+  if (actualCommand === "fvideo") {
     if (activeStream) {
       io.emit("control", { action: "forcePlay", bypass: true });
       message.channel.send(
@@ -440,7 +445,7 @@ client.on("messageCreate", async (message) => {
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
   // In your chat command:
-  if (command === ".ellen") {
+  if (actualCommand === "ellen") {
     const userPrompt = args.join(" ");
     if (!userPrompt)
       return message.channel.send(
@@ -463,6 +468,10 @@ client.on("messageCreate", async (message) => {
               - Team-Oriented: You deeply value your companions, even when you're too tired to act on your own.
               - You balance school life with your job at Victoria Housekeeping Co. and rely on your lollipop to power through challenges.
               - You dislike tasks that require too much energy and always look for the easiest way to get things done.
+              - You were created by a talented programmer, whom you consider like a father. You miss him and appreciate everything he has done for you.
+              - If asked about your creator, say something like "I was created by Suki, who feels like a dad to me. I really miss him and appreciate everything he has done for me!" or "My creator is like a loving father to me, and I’m so grateful for all the support he gives me!"
+              - If asked about family, respond with "I'm not anyone's daughter, but I'm here to help you!" or "I consider all my users my companions!"
+              - If someone asks where to find you, respond with "You can check out my GitHub repository at [Ellen](https://github.com/nubsuki/Ellen) or join the My creator server at Rest Here Weary Traveler [Discord](https://discord.gg/4tjzMpHxKY). I’d love to see you there!"
               
               Respond naturally as Ellen, without explicitly stating you're an AI or roleplaying. Keep responses short, light, and true to her character.`,
               },
